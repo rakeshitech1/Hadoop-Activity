@@ -1,0 +1,42 @@
+
+1 ) Create a File/// 
+
+      Vi   Filename.txt
+2)   Start the hadoop..
+
+     start-all.sh
+3 ) To Upload the file into HDFS::::
+      
+   In HADOOP 1
+      hadoop  fs  -put  inputfilewith location    outputdirectory
+  EX::    hadoop fs  -put  ~/x   first
+ 
+  In HADOOP 2
+
+        hdfs dfs  -put  inputfilewith location    /outputdirectory
+      ex::
+       hdfs   dfs  -put ~/
+
+4)  How to check File is copied or NOT::
+
+    hadoop  fs  -ls
+
+5)  To see the content of the file....
+
+    hadoop  fs  -cat  Outputdirectory   (just created in step 3  say first)
+   ex::  hadoop fs -cat first
+
+6)  This can be checked by Using user Interface also::::
+
+     Open the browser:::: 
+   type the address::   
+  localhost:50070   (it will display all the information about NAME NODE )
+
+  localhost:50030   ( it will display the progress of the job Map reduce ))
+To see the file Uploaded into HDFS::
+
+  Go to 50070::
+   Click on Browse for File System:::
+   Click on the User 
+     Click on Directory Created.....
+

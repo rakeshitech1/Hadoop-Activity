@@ -1,0 +1,417 @@
+
+
+In Map Reduce we used 2 Terminology::
+
+1-- Input Split--  It is the fixed chuck of data that will be served as the input to the 
+                         map Task.
+
+Blocks and Splits are Two differnet Concepts...
+ How ???
+1)  Blocks are Related with HDFS concept which is a part of Storage However 
+     Splits are related to Map reduce world...  which is a part of processing..
+*** Storage and Processing are two independdent Stages ..
+
+2)   Blocks ar the smallest size of data stored in the HDFS.. and Splits are the data
+    that are input to the map JOB...
+
+**** Split size is equal to the blocks size...
+
+*** Map Task produces the splitts and produces an Output...
+****************************************************
+
+Map Reduce problem will be divided into two parts::
+  1) Map Phase
+   2) Reduce Phase
+** All the map test  will be done in parallel and output will be shuffled , sorted
+    and then merged  which will be served as the input to the reduce JOB...
+       Map Phase::
+         *Shuflling 
+         * sorting
+        * Merger..
+
+
+** Reduce  JOb will take the Input and Produces the OutPut...
+
+The whole job execution is taken care by 2 Nodes::: Task Tracker and JOB Tracker   
+     ( NOT DATANODE and NAMENODE because it is concerned with Storage .i.e.  HDFS CONCEPT..)
+ 
+**  JT and TT  are parallel to NM and DN in HDFS  in Map Reduce... 
+   
+ JT is a Deamon running on NN (NN controls about storage of data) and
+      JT is Used for controlling the Processing / Scheduling  the TASK...
+     
+    TT is a Deamon running on DN  (DN is used for Storage of the Data) and
+Ex:::  IF i have 200 MB data to be stored on HADOOP system then NN will decide 
+       ON which System How much data will be stored..
+  Same as For Processing of the DATA  JT will decide which all are the  Systems
+    which will process your Data..
+
+** Storage of Task will be done Once and Processing of Same job Can be done multiple Times.
+    So, Who Know where our Blocks are avilable--   JT  running on NN.
+
+** TT will be running on each  DN escalting run of map task and reduce task...
+
+ ** Running of a MAP / REDUCE Job  is the  TT duty and send the progress to JT...
+*****************************************************************************
+
+*   JT and TT are  both JAVA   PROGRAMS that are running on Machine and they are not Hadrware..
+   i.e.  They are Hust the Deamons...
+  
+Similar to HDFS,    Failure of  DN ,   In MAP Reduce TT Failure is   most Common and Serious  isuue..
+ 
+********************************************************************************
+How MAP REDUCE WORKS::
+
+1::  Map Phase
+2:  Reduce Phase
+
+** Map JOB works on the Data which is located on the NODE ITSELF...
+     This Pricipal is known as DATA LOCALITY....
+* It is most Important  that Map Job gets their Input Data Which is LOCAL.
+If they are NOT local then they need to be fetch from and So LATENCY would be
+ in Network  I/O. and Perfromance will be Degraded...,
+
+**  Hence Input  Split size is equal to Block is present on one node....
+** Split will be equal to BLOCK...
+
+** Map Task can work on Each split.. and carry out its process and write the output on
+   local Disk and Not on HDFS with REplication....
+       $$$ This is just an intermediate result and have no significance  after Final REsult..
+         Hence  it is stored only  till the time reducer picked up and processed sucessfully.
+
+**  It may have certain Possible that reducer gets fail , In this case,  JT will caryy result
+   of previous  Phase..
+     *** JT clears it result only after sucessful Completion of Reducer...
+
+** Result of Map phase will be returned to HDFS only if Zero Reducer are Specified.
+  * ** Some Operation don't need REduce Phase (eX. DISPLAY CONTENT OF A FILE)
+              in this Case  Output of MAp Phase will be written on HDFS..
+********************************************************************************
+nEXT pHASE IS SHUFFLE   AND SORT
+******************************
+MAP PHASE WAS running on all the data nodes...   
+If they are ruuning then they will  produce   Partial output...  and All this map task 
+ result will be merged and sorted and Partitioned.. 
+
+So,  There are 3 steps:
+1) Merge :::  Which is nothing but Combine the output of Map Jobs 
+2)  Sort   :::  It is sorting the Map Output based upon the keys...
+3)  Partitioning ::  Which means that output is divided based on Key Value...
+                            ( It is similar to grouping ) 
+*******************
+Then Reduce Phase Comes Up::::::
+** As  We can See that Reduce don't gets data Locally...
+  * It would be fetech from the network  and 2nd thing to be noted that no of reducer
+    are not decided based upon the Input Size..
+  ( But  MAP Phase--   Depends on the Input Size  and Split Size... )
+  ** No of Reducer are Decided Independently...
+ * Reducer Output are written in HDFS with REplication for  reliability.
+** aFTER  a long process result can't be lost because of Hardware Failure...
+
+$$$  The result is being stored on HDFS which is regilient to Hardware Failure...
+
+**************************************************************************************
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+Map REduce Machanism...
+
+* Input  to map Phase is Split  .
+* A Split can contain multiple records and each records would go through same operation
+  one by One.. ( REcord Reader)
+ * Map  function has Input in the form of  ( Key, Value ) Pair. and Output in the form
+ of  (Key, Value  ) Pair as well...
+** At the Time of Input Hadoop Supplies the keys which is unique to every record.
+    By Default It is BYTE OFFSET  of the File....
+    ** It can be no of lines or No of records as well....
+
+** Programmers does have control over the Input Keys .... 
+
+** Map Processes  the Key and Value  one after other to produce 0 or 1 or more output 
+     (key, Value ) Pair..
+
+** Map Phase output is also  (Key , Value ) Pair..
+
+
+  **  Pls note that , the key, value pair would be same if default mapper is used..
+       It is also called as IDENTITY MAPPER...
+   It does nothing but just copy the key, value pair from the input file to output File with no Processing inbetween.....
+
+** Input of Map Phase has unique key but Output has nonunique key.... We design the map function so which helps us later in 
+    Reduce phase  on same keys..
+* Main Idea of map function is divide the input keys into key, Value pair in such a way that the values when put together
+   for the same key start to make sense....
+      EX::  Later...
+
+* So whole input would be processed and output would be created.....
+** The map Output would be shuffled and sorted based upon the basis of Keys..... So now all the values from the same key
+     are put together.....
+***********************************************************************************************************************************
+&@&****&@&  Identity Reducer  don't  do  Shuffling , only Sorting output will be displyed****
+  Identity Mapper will display result like this::::
+      be,1
+      be,1
+      not, 1
+      or, 1
+      to,1
+      to,1
+ ** Just Displying the list.....
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Now this Value will be feed into REDUCER
+
+This intermediate key, Value  output would be created by Multiple map Operation ( Since Multiple Mappers are running in Parallel)
+ *** It is critical for Map reduce framework that One particular reducer gets all values for the particular Keys (IN this 
+     Case No need of Sorting and Shuffling  )
+          ... or then we won't be able to make sense of any values...***
+
+**** This all Mechanism of sorting  the data or sending the data over the network is all managed by HADOOP Itself... 
+    and Programmmer need not to program anything for this.... 
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+We have noticed that Reducer input is the key and Value associated with  it....
+
+******************************************
+Values over the keys are Not Sorted Here , they taken over so many map task and they Put Together...
+
+** Different Map Task can gets finish at differnt Times so data would be generated randomdly....
+So Data may be in any sequence for a Key....   Sequence of the value is not so important....
+
+** Reduce function will be called  for each key  and each value gets processed one by One... for each key and list of Values
+    reducer may choose 0, 1 or More key, Value pair.....
+
+**Pls note that   Input to the reducer is in Sorted manner so the output of Reducer will also be in Sorted Manner...
+*******************************************************************************************************************
+**********************************************************************************************************************
+
+While you want to solve a problem using MapReduce then You should do Reverse Engineering.....
+ i.e.  Firstly Identify  how should be the final Output ( REducer O/P) then We can decide the Reducer I/p inturn 
+     we can find the key....
+**  Identify the keys solves half of the problem........
+
+**********************************************************************************************************************
+ EX:::::   Find How many times differnt Words appear on a File :::
+                          TO BE  OR NOT TO BE
+
+sOLUTION::::  our Job is (  Word,   No of  oocurences of the Word )
+                  i.e.                   BE       2   
+                                          NOT   1
+                                          OR      1 
+                                          TO      2
+                                          
+   ** This is common technique which seach engine applies to the content of the web Page to find the relivent keyword
+        on a website....
+   ** Most Occuring Keyword are taken by most relevent to the website...
+
+----------------------
+Next Challenge is how to break input to the map Function  (key, Value) so that Reducer can Produce the Output as shown above)
+
+**  Record reader will be called for input Split  and Key , value pair will be genrated
+      
+    BYTE OFFSET , LINE
+
+     1,                  to be or not too be
+
+     MAP ALGORITHM:::
+                    mapper (Line from Input)
+                    for each word in the line
+                    emit  (Word , 1)
+
+ Output::   to, 1
+                 be. 1
+                 or, 1
+                 not ,1
+                 to , 1
+                 be ,1
+
+ *** Here  1 signifies that Word is coming one time... this would be sorted based upon the keys (In our Case it is words..)
+ ** So the  keys and Values are arranged in the alphabetical order....
+              be ,1
+              be, 1
+              not ,1
+              or  , 1
+              to , 1
+              to ,1
+*** Now , Shuffling of the output from multiple mapper will be done and  then all this will be sorted.....
+     it means put keys , values put together will make a sense...
+                  be     1
+                           1
+
+                  not      1
+
+                 or         1
+
+                 to          1
+                              1
+
+*** Now  Reducer  algorithm Will be call  reduce method   one time per key...
+     Reducer Algorithm:::
+                                   reduce ( Key, Value)
+                                   Sum=0
+                                   for Each  value in  Keys
+                                   sum= Sum + Value
+                                   Emit   (word, Sum)
+
+** This is an iterative  over the keys and sum it up  to produce the result....
+*  We can see that every reducer has the same method 
+        sum=0
+       **it would initialize the sum =0
+Follwed by iteration:::
+     for each  value in the  key
+          sum= Sum + value
+  and then function ends with the output (Key, value)
+    Emit   (word, Sum)
+
+****  We can design reducer to emit 0,1, or more  (key, Value ) pair for each time it would call for a key......
+
+*******************************************************************************************************************
+*******************************************************************************************************************
+*******************************************************************************************************************
+Simulation with Multiple Mapper:::
+
+** Lets Assume we have to mapper
+ Mapper 1::    1, to be or
+ Mapper  2::    10, Not to be
+* Map Function tokanizes the line record into words and Emits one as a value ....
+
+   Map 1::     to 1
+                   be 1
+                   or   1
+    
+   Map 2::        not   1
+                      to 1
+                      be 1
+then All this output of both mapper will be mergerd and Sorted and shuffled 
+   	 be 1
+ 	 be  1
+ 	not   1
+  	 or   1
+   	to   1 
+  	to 1
+and then this will be input for the reducer.....
+
+*****  Reeducer work is the same.......
+**   The power of Parallelism can and should be harness as the reduce phase as well. 
+
+********************************************************
+Now , Let us assume we have 2 Reducer:::::::::::
+In this case we need to take care 2 things::
+
+1) Key Should be Partitioned in such a way that SAME KEY SHOULD GO TO SAME REDUCER...
+     REducer 1
+            be, 1
+            be ,1
+            no, 1
+
+   REDUCER 2
+              or, 1
+              to, 1
+              to ,1
+
+ 2) Distribution should be almost Equal.....
+
+** Remember if i was having one reducer we get one single sorted file but incase of 2 reducer  we gets 2  sorted file.
+*** Here we have seen that word   BE has been processed by 2 differnt map function yet they go processed by same reducer 
+     to produce the result.
+   This step is possible only because of shuffle and sort step in between which is critical to any map reduce solution..
+
+** It is Important to understand that keys are processed in distributed fashion at map phase and 
+   At Reduce phase --  it all brought together so that the processing of all the values of a particular key can be done by same
+   reducer.
+All of this is getting possible by Shuffle and Sort Phase....
+
+Map REduce can be written in Many Languages , Here we are learning JAVA...
+
+In JAVA we write 3  Classes::
+ 1) Map Class::  Which would have map Side of the Logic
+  2) Reduce Class:::  Which have Reduce side of the logic
+  3) Driver Class::  Which Decide configuration   and how the job would read  and write the data ..
+
+*** Function Like distribution of code to multiple machine so that map function gets the data locally. and Map output
+      reaches the correct reduce machine along with shuffle and sort in Between....
+
+*** This all will be taken care by HADOOP itself and Programer need not to code anything for this....  
+
+*******************************************************************************************************************
+*******************************************************************************************************************
+*******************************************************************************************************************
+*******************************************************************************************************************
+ Primitive Types (in Java)       Wrapper Class
+  Int  --------------------------------->  Interger               
+  Long  ------------------------------> long
+  float --------------------------------> float
+  Double ----------------------------->Double
+  Char ---------------------------------> character
+  string ---------------------------------> string
+
+** Before Java 1.4 , Conversion of primitive ttype to objective type ( and Vice Versa ) was manual But in Java 1.4 onwards
+   it is being done java itself. (called Auto Boxing and Unboxing  )
+
+In Hadoop we have the Box Class   
+
+Primitive Types (in Java)              Wrapper Class                         Hadoop Box Class::
+  Int  --------------------------------->Interger   --------------------------->IntWritable          
+  Long  -------------------------------> long     ----------------------------->LongWritable
+  float -------------------------------->float    ----------------------------->FloatWritable
+  Double ------------------------------->Double   ----------------------------->DoubleWritable
+  Char --------------------------------->character ---------------------------->Text
+  string ------------------------------->string  -----------------------=------>Text
+
+** Mapper Class Input   ( LongWritable , Text)
+    Mapper class Output ( Text, Longwritable)
+** Reducer Input ( Text, Longwritable)
+    Reducer Output (( Text, Longwritable)
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                      
+      
+                                        
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

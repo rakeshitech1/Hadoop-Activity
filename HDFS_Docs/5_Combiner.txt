@@ -1,0 +1,85 @@
+
+  Combiners 
+**********************************
+**  We know that for any Job Multiple mappers are running in Parallel.
+** All the mapper output is being transferred to the the reducer over the network... Due to bandwidth Ladency can be      caused.
+Ex::  
+If we have two mappers ::
+                        Mapper 1                                                           Mapper 2
+Input:  1, to be or not to be
+                                                                                   i/p    10,or we will go to market
+
+* Now both the mapper will produce the output in Parallel... And Output will be sent to Reduce phase...
+** If Multiple mapper are there then lots of data has to be transfer over the network and REduce phase has to wait  longer     for the processing ...
+
+
+**Function of Combiner is to process output of Map Function locally so that there will be less result to be transfer over the    network...
+
+ ** If repetition of words are not avaiable then will it be useful to use Combiner ????  Ofcourse Not ...
+* Basically Idea of using Combiner is to reduce the load of REDUCER so that HADOOP can Process the job Faster..  Combiner 
+does the same jobs of reducer but locally... (i.e Combiner does it for each Map Output Locally) 
+  However REDUCER does it Globally for all map Output.....
+
+****************************************************************************************************************
+ Rest all the processess are the same....
+   I.e. Output of Combiner will be   SHUFFLE and SORT and then REDUCE  ...
+
+Key POints about the Combiners:::
+
+1) If writing the combiner then it extends the reducer class.
+   When we think about Combiner think for REducer.. So Program structure wise exactly the same and extends the reducer class like reducer does....
+
+2) Combiner Logic will be written in REDUCE METHOD.. exactly in the same maneer as in REDUCE CLASS.
+
+3) These can be applied only in the case of program which is commutative and Associative in nature...
+
+    2+3=5   or 3+2  =5   i.e  Addition operation is  Commutative
+But 
+   2-3 =-1 and 3-2 =1 i.e Subtration operation is not Commutative...
+
+Associative:::
+    
+  A + (B+C)  = (A+B) + C
+
+** It is just a way of operation in which order of Operation does not Manner...
+ i.e Operation done by COMBINER should not depend upon the order of the values that are treated to combiner operation.
+
+EX..   word count ::
+
+This means that grouping of Operands doesn't changes the final RESULT...
+ REason for thaking this Step is that Combiner runs iterativiely (recursively) .e. On Multiple  time on multiple OUTPUT..
+
+**  Manner of Operation is Random... Combiner works reandomly and produce the same result....
+** Chnage of Order should n't change the output..
+
+
+4 )  Implementaion of Combiner reduces the transfer of data between Map method and reduce method .... 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+ 
+
+   
+
+
